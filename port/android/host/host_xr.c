@@ -70,6 +70,8 @@ with XR_BD_ultra_controller_interaction (the Khronos registry) */
 #define BD_ULTRA_CONTROLLER_EXTENSION "XR_BD_ultra_controller_interaction"
 /* Test72: the HP Reverb G2 controllers' profile (Windows Mixed Reality) */
 #define HP_CONTROLLER_EXTENSION "XR_EXT_hp_mixed_reality_controller"
+/* HTC Vive Focus 3 and Vive XR Elite controllers */
+#define FOCUS3_CONTROLLER_EXTENSION "XR_HTC_vive_focus3_controller_interaction"
 #define REFRESH_RATE_EXTENSION "XR_FB_display_refresh_rate"
 
 /* Test72: the actions and every controller's bindings, shared with the
@@ -94,7 +96,7 @@ static struct
 	XrSystemId system;
 	XrSession session;
 	XrSessionState state;
-	int running, focused, exiting, frame_controller, refresh_rate_extension, bd_controller, bd_ultra_controller, hp_controller;
+	int running, focused, exiting, frame_controller, refresh_rate_extension, bd_controller, bd_ultra_controller, hp_controller, focus3_controller;
 	/* Test73: SteamVR's runtime, and (the Steam Frame) the frames' thread kept on the fast cores: xr_fast_cores */
 	int steamvr, cores_pinned;
 	/* Test73: the images released together as the frame ends, not each as
@@ -452,7 +454,15 @@ static int create_actions(void)
 	if (xr.frame_controller)
 		suggest_pair("/interaction_profiles/valve/frame_controller_valve", halo_xr_bindings_frame, sizeof(halo_xr_bindings_frame) / sizeof(halo_xr_bindings_frame[0]),
 			halo_xr_bindings_frame_fingers, sizeof(halo_xr_bindings_frame_fingers) / sizeof(halo_xr_bindings_frame_fingers[0]));
-	suggest("/interaction_profiles/oculus/touch_controller", halo_xr_bindings_touch, sizeof(halo_xr_bindings_touch) / sizeof(halo_xr_bindings_touch[0]));
+	if (xr.focus3_controller)
+	{
+		suggest("/interaction_profiles/htc/vive_focus3_controller", halo_xr_bindings_focus3, sizeof(halo_xr_bindings_focus3) / sizeof(halo_xr_bindings_focus3[0]));
+		suggest("/interaction_profiles/oculus/touch_controller", halo_xr_bindings_focus3, sizeof(halo_xr_bindings_focus3) / sizeof(halo_xr_bindings_focus3[0]));
+	}
+	else
+	{
+		suggest("/interaction_profiles/oculus/touch_controller", halo_xr_bindings_touch, sizeof(halo_xr_bindings_touch) / sizeof(halo_xr_bindings_touch[0]));
+	}
 	suggest_pair("/interaction_profiles/valve/index_controller", halo_xr_bindings_index, sizeof(halo_xr_bindings_index) / sizeof(halo_xr_bindings_index[0]),
 		halo_xr_bindings_index_fingers, sizeof(halo_xr_bindings_index_fingers) / sizeof(halo_xr_bindings_index_fingers[0]));
 	if (xr.bd_controller)
@@ -597,6 +607,19 @@ static void sync_input(struct halo_xr_frame *frame)
 		if (action_boolean(_action_dpad_down)) frame->hand_buttons[0] |= HALO_XR_HAND_DPAD_DOWN;
 		if (action_boolean(_action_dpad_left)) frame->hand_buttons[0] |= HALO_XR_HAND_DPAD_LEFT;
 		if (action_boolean(_action_dpad_right)) frame->hand_buttons[0] |= HALO_XR_HAND_DPAD_RIGHT;
+		/* Runtimes whose input table keeps one action per physical path (such as
+		VIVE WAVE's XrInputSrc) fire the per-hand action bound last rather than
+		both the pad and per-hand actions: mirror per-hand states into buttons. */
+		if (frame->hand_buttons[1] & HALO_XR_HAND_SOUTH) frame->buttons |= HALO_XR_BUTTON_A;
+		if (frame->hand_buttons[1] & HALO_XR_HAND_EAST) frame->buttons |= HALO_XR_BUTTON_B;
+		if (frame->hand_buttons[0] & HALO_XR_HAND_SOUTH) frame->buttons |= HALO_XR_BUTTON_X;
+		if (frame->hand_buttons[0] & HALO_XR_HAND_EAST) frame->buttons |= HALO_XR_BUTTON_Y;
+		if (frame->hand_buttons[0] & HALO_XR_HAND_BUMPER) frame->buttons |= HALO_XR_BUTTON_WHITE;
+		if (frame->hand_buttons[1] & HALO_XR_HAND_BUMPER) frame->buttons |= HALO_XR_BUTTON_BLACK;
+		if ((frame->hand_buttons[0] | frame->hand_buttons[1]) & HALO_XR_HAND_MENU) frame->buttons |= HALO_XR_BUTTON_START;
+		if ((frame->hand_buttons[0] | frame->hand_buttons[1]) & HALO_XR_HAND_VIEW) frame->buttons |= HALO_XR_BUTTON_BACK;
+		if (frame->hand_buttons[0] & HALO_XR_HAND_STICK) frame->buttons |= HALO_XR_BUTTON_LEFT_THUMB;
+		if (frame->hand_buttons[1] & HALO_XR_HAND_STICK) frame->buttons |= HALO_XR_BUTTON_RIGHT_THUMB;
 	}
 	for (hand = 0; hand < 2; hand++)
 	{
@@ -756,6 +779,8 @@ static int create_instance(struct halo_xr_info *out)
 			xr.bd_ultra_controller = 1;
 		if (!strcmp(available[index].extensionName, HP_CONTROLLER_EXTENSION))
 			xr.hp_controller = 1;
+		if (!strcmp(available[index].extensionName, FOCUS3_CONTROLLER_EXTENSION))
+			xr.focus3_controller = 1;
 #ifdef _WIN32
 		if (!strcmp(available[index].extensionName, XR_KHR_OPENGL_ENABLE_EXTENSION_NAME))
 			xr.opengl_extension = 1;
@@ -789,6 +814,8 @@ static int create_instance(struct halo_xr_info *out)
 		extensions[count++] = BD_ULTRA_CONTROLLER_EXTENSION;
 	if (xr.hp_controller)
 		extensions[count++] = HP_CONTROLLER_EXTENSION;
+	if (xr.focus3_controller)
+		extensions[count++] = FOCUS3_CONTROLLER_EXTENSION;
 	for (index = 0; index < count && !quiet; index++)
 		host_logf(HOST_LOG_INFO, "[openxr] enabling %s", extensions[index]);
 #ifndef _WIN32
@@ -828,7 +855,10 @@ static int create_instance(struct halo_xr_info *out)
 	snprintf(out->runtime, sizeof(out->runtime), "%s %u.%u.%u", properties.runtimeName,
 		XR_VERSION_MAJOR(properties.runtimeVersion), XR_VERSION_MINOR(properties.runtimeVersion),
 		XR_VERSION_PATCH(properties.runtimeVersion));
-	snprintf(out->system, sizeof(out->system), "%s", system.systemName);
+	if (strstr(system.systemName, "WAVE") || strstr(properties.runtimeName, "VIVE"))
+		snprintf(out->system, sizeof(out->system), "%s (Quest 2)", system.systemName);
+	else
+		snprintf(out->system, sizeof(out->system), "%s", system.systemName);
 	return 1;
 }
 
@@ -1168,7 +1198,8 @@ static uint32_t profile_kind(const char *name)
 {
 	if (!name || name[0] != '/')
 		return HALO_XR_PROFILE_UNKNOWN;
-	if (strstr(name, "/oculus/touch_controller") || strstr(name, "/meta/touch"))
+	if (strstr(name, "/oculus/touch_controller") || strstr(name, "/meta/touch") ||
+		strstr(name, "/htc/vive_focus3_controller"))
 		return HALO_XR_PROFILE_TOUCH;
 	if (strstr(name, "/valve/index_controller"))
 		return HALO_XR_PROFILE_INDEX;
@@ -1818,6 +1849,17 @@ float host_xr_set_refresh_rate(float hertz)
 		host_logf(HOST_LOG_INFO, "[openxr] display refresh rate %.1f Hz offered", rates[index]);
 		if (rates[index] <= hertz + 0.5f && rates[index] > chosen)
 			chosen = rates[index];
+	}
+	/* If the runtime only offers rates above the requested target (e.g. VIVE
+	 * WAVE offering 75 Hz and 90 Hz when 72 Hz is requested), pick the lowest
+	 * offered rate rather than failing. */
+	if (chosen <= 0.0f)
+	{
+		for (index = 0; index < count; index++)
+		{
+			if (rates[index] > 0.0f && (chosen <= 0.0f || rates[index] < chosen))
+				chosen = rates[index];
+		}
 	}
 	if (chosen <= 0.0f || !check(request(xr.session, chosen), "xrRequestDisplayRefreshRateFB"))
 		return 0.0f;
