@@ -265,4 +265,40 @@ static const struct binding halo_xr_bindings_hp[] =
 	{ _action_hand_menu, "/user/hand/left/input/menu/click" },
 };
 
+/* HTC Vive Focus 3 and Vive XR Elite controllers
+(XR_HTC_vive_focus3_controller_interaction): Touch's layout (A/B right, X/Y and
+menu left) with capacitive sensors on the thumbrest, stick and trigger, but not
+on the A/B/X/Y face buttons (VIVE WAVE's XrInputSrc maps face-button touch paths
+onto their click paths and overwrites the click bindings if suggested). */
+static const struct binding halo_xr_bindings_focus3[] =
+{
+	{ _action_move, "/user/hand/left/input/thumbstick" },
+	{ _action_look, "/user/hand/right/input/thumbstick" },
+	{ _action_trigger_left, "/user/hand/left/input/trigger/value" },
+	{ _action_trigger_right, "/user/hand/right/input/trigger/value" },
+	{ _action_squeeze_left, "/user/hand/left/input/squeeze/value" },
+	{ _action_squeeze_right, "/user/hand/right/input/squeeze/value" },
+	{ _action_a, "/user/hand/right/input/a/click" },
+	{ _action_b, "/user/hand/right/input/b/click" },
+	{ _action_x, "/user/hand/left/input/x/click" },
+	{ _action_y, "/user/hand/left/input/y/click" },
+	{ _action_start, "/user/hand/left/input/menu/click" },
+	{ _action_left_thumb, "/user/hand/left/input/thumbstick/click" },
+	{ _action_right_thumb, "/user/hand/right/input/thumbstick/click" },
+	POSES("left"), POSES("right"),
+	{ _action_hand_south, "/user/hand/right/input/a/click" },
+	{ _action_hand_south, "/user/hand/left/input/x/click" },
+	{ _action_hand_east, "/user/hand/right/input/b/click" },
+	{ _action_hand_east, "/user/hand/left/input/y/click" },
+	{ _action_hand_stick, "/user/hand/left/input/thumbstick/click" },
+	{ _action_hand_stick, "/user/hand/right/input/thumbstick/click" },
+	{ _action_hand_menu, "/user/hand/left/input/menu/click" },
+	{ _action_hand_thumb_touch, "/user/hand/left/input/thumbrest/touch" },
+	{ _action_hand_thumb_touch, "/user/hand/right/input/thumbrest/touch" },
+	{ _action_hand_thumb_touch, "/user/hand/left/input/thumbstick/touch" },
+	{ _action_hand_thumb_touch, "/user/hand/right/input/thumbstick/touch" },
+	{ _action_hand_index_touch, "/user/hand/left/input/trigger/touch" },
+	{ _action_hand_index_touch, "/user/hand/right/input/trigger/touch" },
+};
+
 #endif

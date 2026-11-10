@@ -113,7 +113,7 @@ static int preset_for_headset(void)
 {
 	const char *system = vr_system_name();
 
-	if (strstr(system, "Quest 2") || strstr(system, "Quest2"))
+	if (strstr(system, "Quest 2") || strstr(system, "Quest2") || strstr(system, "WAVE"))
 		return _preset_medium;
 	if (strstr(system, "Quest") &&
 		!strstr(system, "Quest 3") && !strstr(system, "Quest3") && !strstr(system, "Quest Pro"))

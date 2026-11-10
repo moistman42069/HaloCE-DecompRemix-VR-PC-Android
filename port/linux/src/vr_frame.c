@@ -1100,7 +1100,7 @@ static double auto_resolution_scale(const char *system)
 		scale = 1.3;
 	else if (strstr(system, "Quest 3") || strstr(system, "Quest3") || strstr(system, "Quest Pro"))
 		scale = 1.0;
-	else if (strstr(system, "Quest 2") || strstr(system, "Quest2"))
+	else if (strstr(system, "Quest 2") || strstr(system, "Quest2") || strstr(system, "WAVE"))
 		scale = 0.85;
 	else if (strstr(system, "Quest"))
 		scale = 0.7;
@@ -1133,6 +1133,8 @@ void vr_initialize(void)
 	choose_eye_size();
 	apply_eye_images();
 	vr.touch_layout = strstr(vr.info.system, "Quest") != NULL;
+	if (strstr(vr.info.system, "WAVE") || strstr(vr.info.system, "VIVE") || strstr(vr.info.runtime, "VIVE"))
+		vr.touch_layout = 1;
 	/* the swapchains are sRGB and the game's picture is gamma-encoded
 	already: written without conversion, the compositor shows it as it is */
 	vr.srgb_write_control = host_gl_has_extension("GL_EXT_sRGB_write_control");
